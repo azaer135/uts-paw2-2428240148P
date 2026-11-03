@@ -9,39 +9,26 @@ const fasilitasSchema = new mongoose.Schema({
     ramahDisabilitas: { type: Boolean, default: false }
 }, { _id: false });
 
-const parawisataSchema = new mongoose.Schema({
-    nama: {
+const SONGKET = new mongoose.Schema({
+    kodeKain: {
         type: String,
-        required: [true, 'nama wajib diisi'],
+        required: [true, 'kode kain wajib diisi'],
         trim: true
     },
-    kota: {
+    motif: {
         type: String,
-        required: [true, 'kota wajib diisi'],
+        required: [true, 'motif wajib diisi'],
         trim: true
     },
-    kategori: {
-        type: String,
-        required: [true, 'kategori wajib diisi'],
-        trim: true
-    },
-    hargaTiket: {
+    harga: {
         type: Number,
-        required: [true, 'harga tiket wajib diisi']
+        required: [true, 'wajib minimal 0']
     },
-    jamBuka: {
+    benang: {
         type: String,
-        required: [true, 'jam buka wajib diisi'],
+        required: [true, ''],
         trim: true
     },
-    fasilitas: {
-        type: fasilitasSchema,
-        default: () => ({})
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
-    }
 });
 
 module.exports = mongoose.model('KerajinanSongket', parawisataSchema);

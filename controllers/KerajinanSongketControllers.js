@@ -1,7 +1,7 @@
 const Parawisata = require('../models/KerajinanSongketModel');
 const { errorHttp } = require('../middlewares/errorHandler');
 
-const JENIS = ['Parkir', 'Musholla', 'Toilet', 'Kuliner', 'ramahDisabilitas'];
+const SONGKET = ['kodeKain', 'Motif', 'Toilet', 'Kuliner', 'ramahDisabilitas'];
 const LIMIT_DEFAULT = 10;
 const LIMIT_MAKS = 50;
 const FIELD_SORT = ['nama', 'kota', 'kategori', 'hargaTiket', 'createdAt'];
