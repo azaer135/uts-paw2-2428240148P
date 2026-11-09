@@ -6,10 +6,9 @@ const cors = require('cors');
 const logger = require('./middlewares/logger');
 const { notFoundHandler, errorHandler } = require('./middlewares/errorHandler');
 
-const parawisataRoutes = require('./routes/parawisataRoutes');
-const fasilitasRoutes = require('./routes/fasilitasRoutes');   // bersama require lainnya
+const KerajinanSongket = require('./routes/KerajinanSongketRoutes');// bersama require lainnya
 
-const app = express();
+const app = express(); 
 const PORT = process.env.PORT || 3000;
 
 // ---------- Middleware global ----------

@@ -1,7 +1,7 @@
 
 const mongoose = require('mongoose');
 
-const fasilitasSchema = new mongoose.Schema({
+const KerajinanSongket = new mongoose.Schema({
     Parkir: { type: Boolean, default: false },
     Musholla: { type: Boolean, default: false },
     Toilet: { type: Boolean, default: false },
