@@ -1,103 +1,118 @@
-const Parawisata = require('../models/KerajinanSongketModel');
-const { errorHttp } = require('../middlewares/errorHandler');
+const mongoose = require("mongoose");
+const Tiket = require("../models/pengrajinModels");
+const Konser = require("../models/KerajinanSongketModels");
 
-const SONGKET = ['kodeKain', 'Motif', 'Toilet', 'Kuliner', 'ramahDisabilitas'];
-const LIMIT_DEFAULT = 10;
-const LIMIT_MAKS = 50;
-const FIELD_SORT = ['nama', 'kota', 'kategori', 'hargaTiket', 'createdAt'];
-const FIELD_BOLEH_DIPILIH = ['nama', 'kota', 'kategori', 'hargaTiket', 'jamBuka', 'fasilitas', 'createdAt'];
+const fieldProjection = "_id kodeTiket namaPembeli harga kelas";
 
-// Mengubah bilangan dari query string menjadi bilangan bulat yang aman
-function angkaAman(nilai, bawaan, min, maks) {
-    const n = parseInt(nilai, 10);
-    if (Number.isNaN(n)) return bawaan;
-    return Math.min(Math.max(n, min), maks);
-}
+// POST /tiket - membuat data tiket utama
+const createTiket = async (req, res, next) => {
+  try {
+    const {
+      kodeKain,
+      motif,
+      harga,
+      ukuran,
+      kontak,
+      konserId
+    } = req.body;
 
-exports.create = async (req, res) => {
-    const { nama, kota, kategori, hargaTiket, jamBuka, fasilitas } = req.body;
-    const parawisata = await Parawisata.create({ nama, kota, kategori, hargaTiket, jamBuka, fasilitas });
-    res.status(201).json(parawisata);
+    // Memeriksa format ID konser.
+    if (konserId && !mongoose.Types.ObjectId.isValid(konserId)) {
+      const error = new Error("ID konser tidak valid");
+      error.status = 400;
+      return next(error);
+    }
+
+    // Memastikan konser yang dipilih tersedia.
+    if (konserId) {
+      const konser = await Konser.findById(konserId);
+
+      if (!konser) {
+        const error = new Error("Data konser tidak ditemukan");
+        error.status = 404;
+        return next(error);
+      }
+    }
+
+    // Hanya menerima field yang ditentukan pada topik.
+    const tiket = await Tiket.create({
+      kodeTiket,
+      namaPembeli,
+      harga,
+      kelas,
+      kontak,
+      konserId
+    });
+
+    return res.status(201).json({
+      message: "Data tiket berhasil ditambahkan",
+      data: tiket
+    });
+  } catch (error) {
+    return next(error);
+  }
 };
 
-
-exports.getAll = async (req, res) => {
+// GET /tiket dan GET /tiket?kelas=...
+const getAllTiket = async (req, res, next) => {
+  try {
     const filter = {};
 
-    if (req.query.kota) {
-        filter.kota = String(req.query.kota);
-    }
-    if (req.query.kategori) {
-        filter.kategori = String(req.query.kategori);
-    }
-    if (req.query.fasilitas) {
-        const diminta = String(req.query.fasilitas)
-            .split(',')
-            .map((s) => s.trim().toLowerCase());
-        for (const nama of FASILITAS) {
-            if (diminta.includes(nama.toLowerCase())) {
-                filter[`fasilitas.${nama}`] = true;
-            }
-        }
+    // Filter berdasarkan kelas tiket jika query tersedia.
+    if (req.query.kelas !== undefined) {
+      filter.kelas = req.query.kelas;
     }
 
-    const page = angkaAman(req.query.page, 1, 1, Number.MAX_SAFE_INTEGER);
-    const limit = angkaAman(req.query.limit, LIMIT_DEFAULT, 1, LIMIT_MAKS);
+    const tiket = await Tiket.find(filter)
+      .select(fieldProjection)
+      .sort({
+        createdAt: -1
+      });
 
-    // Sorting: ?sort=nama (naik) atau ?sort=-nama (turun). Bawaan: terbaru dulu
-    const sortParam = String(req.query.sort || '-createdAt');
-    const arah = sortParam.startsWith('-') ? -1 : 1;
-    const sortField = sortParam.replace(/^-/, '');
-    if (!FIELD_SORT.includes(sortField)) {
-        throw errorHttp(400, `sort hanya boleh: ${FIELD_SORT.join(', ')}`);
-    }
-
-    // Projection: ?fields=nama,kota
-    let select = '';
-    if (req.query.fields) {
-        const fields = String(req.query.fields).split(',').map((f) => f.trim());
-        if (!fields.every((f) => FIELD_BOLEH_DIPILIH.includes(f))) {
-            throw errorHttp(400, `fields hanya boleh: ${FIELD_BOLEH_DIPILIH.join(', ')}`);
-        }
-        select = fields.join(' ');
-    }
-
-    const collation = { locale: 'en', strength: 2 };
-
-    const query = Parawisata.find(filter)
-        .collation(collation)
-        .select(select)
-        .sort({ [sortField]: arah, _id: 1 })
-        .skip((page - 1) * limit)
-        .limit(limit);
-
-    const [data, total] = await Promise.all([
-        query,
-        Parawisata.countDocuments(filter).collation(collation),
-    ]);
-
-    res.json({ data, page, limit, total, totalPages: Math.ceil(total / limit) });
+    return res.status(200).json({
+      message: "Berhasil mengambil data tiket",
+      data: tiket
+    });
+  } catch (error) {
+    return next(error);
+  }
 };
 
-exports.getById = async (req, res) => {
-    const data = await Parawisata.findById(req.params.id);
-    if (!data) throw errorHttp(404, 'Data tidak ditemukan');
-    res.json(data);
-};
+// GET /tiket/:id - mengambil detail tiket.
+const getTiketById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
 
-exports.update = async (req, res) => {
-    const { nama, kota, kategori, hargaTiket, jamBuka, fasilitas } = req.body;
-    const data = await Parawisata.findByIdAndUpdate(
-        req.params.id,
-        { nama, kota, kategori, hargaTiket, jamBuka, fasilitas },
-        { returnDocument: 'after', runValidators: true }
+    // Memeriksa apakah ID memiliki format ObjectId yang valid.
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      const error = new Error("ID tiket tidak valid");
+      error.status = 400;
+      return next(error);
+    }
+
+    // Mengambil tiket sekaligus data konser yang direferensikan.
+    const tiket = await Tiket.findById(id).populate(
+      "konserId",
+      "kode nama"
     );
-    if (!data) throw errorHttp(404, 'Data tidak ditemukan');
-    res.json(data);
+
+    if (!tiket) {
+      const error = new Error("Data tiket tidak ditemukan");
+      error.status = 404;
+      return next(error);
+    }
+
+    return res.status(200).json({
+      message: "Berhasil mengambil detail tiket",
+      data: tiket
+    });
+  } catch (error) {
+    return next(error);
+  }
 };
 
-exports.remove = async (req, res) => {
-    const data = await Parawisata.findByIdAndDelete(req.params.id);
-    if (!data) throw errorHttp(404, 'Data tidak ditemukan');
-    res.status(204).send();
+module.exports = {
+  createTiket,
+  getAllTiket,
+  getTiketById
 };

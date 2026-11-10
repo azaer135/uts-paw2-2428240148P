@@ -2,11 +2,13 @@
 const mongoose = require('mongoose');
 
 const KerajinanSongket = new mongoose.Schema({
-    Parkir: { type: Boolean, default: false },
-    Musholla: { type: Boolean, default: false },
-    Toilet: { type: Boolean, default: false },
-    Kuliner: { type: Boolean, default: false },
-    ramahDisabilitas: { type: Boolean, default: false }
+    kodeKain: String,
+    motif: String,
+    harga: Number,
+    benang: String,
+    ukuran: embedding,
+    pengrajinId: ObjectId,
+    createdAt: Date
 }, { _id: false });
 
 const SONGKET = new mongoose.Schema({
@@ -29,6 +31,10 @@ const SONGKET = new mongoose.Schema({
         required: [true, ''],
         trim: true
     },
+    ukuran: {
+        type: String,
+        
+    }
 });
 
 module.exports = mongoose.model('KerajinanSongket', parawisataSchema);
