@@ -32,9 +32,14 @@ const SONGKET = new mongoose.Schema({
         trim: true
     },
     ukuran: {
-        type: String,
-        
+        type: ukuranSchema,
+        required: [true, 'ukuran wajib diisi']
+    },
+    pengrajinId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Pengrajin',
+        required: [true, 'pengrajinId wajib diisi']
     }
 });
 
-module.exports = mongoose.model('KerajinanSongket', parawisataSchema);
+module.exports = mongoose.model('KerajinanSongket', KerajinanSongket);

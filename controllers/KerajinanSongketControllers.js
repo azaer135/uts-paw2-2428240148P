@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
-const Tiket = require("../models/pengrajinModels");
-const Konser = require("../models/KerajinanSongketModels");
+const Pengrajin  = require("../models/pengrajinModels");
+const Songket = require("../models/KerajinanSongketModels");
 
 const fieldProjection = "_id kodeTiket namaPembeli harga kelas";
 
@@ -11,24 +11,26 @@ const createTiket = async (req, res, next) => {
       kodeKain,
       motif,
       harga,
+      benang,
       ukuran,
       kontak,
-      konserId
+      pengrajinId,
+      createdAt,
     } = req.body;
 
-    // Memeriksa format ID konser.
-    if (konserId && !mongoose.Types.ObjectId.isValid(konserId)) {
-      const error = new Error("ID konser tidak valid");
+    // Memeriksa format ID pengrajin.
+    if (pengrajinId && !mongoose.Types.ObjectId.isValid(pengrajinId)) {
+      const error = new Error("ID pengrajin tidak valid");
       error.status = 400;
       return next(error);
     }
 
-    // Memastikan konser yang dipilih tersedia.
-    if (konserId) {
-      const konser = await Konser.findById(konserId);
+    // Memastikan pengrajin yang dipilih tersedia.
+    if (pengrajinId) {
+      const pengrajin = await Pengrajin.findById(pengrajinId);
 
-      if (!konser) {
-        const error = new Error("Data konser tidak ditemukan");
+      if (!pengrajin) {
+        const error = new Error("Data pengrajin tidak ditemukan");
         error.status = 404;
         return next(error);
       }
@@ -41,7 +43,8 @@ const createTiket = async (req, res, next) => {
       harga,
       kelas,
       kontak,
-      konserId
+      pengrajinId,
+      benang
     });
 
     return res.status(201).json({
@@ -90,9 +93,9 @@ const getTiketById = async (req, res, next) => {
       return next(error);
     }
 
-    // Mengambil tiket sekaligus data konser yang direferensikan.
+    // Mengambil tiket sekaligus data pengrajin yang direferensikan.
     const tiket = await Tiket.findById(id).populate(
-      "konserId",
+      "pengrajinId",
       "kode nama"
     );
 
