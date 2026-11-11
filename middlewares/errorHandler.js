@@ -13,7 +13,7 @@ function errorHandler(err, req, res, next) {
     if (err.type === 'entity.parse.failed') {
         return res.status(400).json({ message: 'Format JSON tidak valid' });
     }
-    // 2. ID tidak sesuai format ObjectId (mis. /tourist-sport/abc)
+    // 2. ID tidak sesuai format ObjectId.
     if (err.name === 'CastError') {
         return res.status(400).json({ message: `Nilai '${err.value}' tidak valid untuk field ${err.path}` });
     }

@@ -1,121 +1,145 @@
-const mongoose = require("mongoose");
-const Pengrajin  = require("../models/pengrajinModels");
-const Songket = require("../models/KerajinanSongketModels");
+const mongoose = require('mongoose');
+const Pengrajin = require('../models/pengrajinModels');
+const Songket = require('../models/KerajinanSongketModels');
 
-const fieldProjection = "_id kodeTiket namaPembeli harga kelas";
+const errorHttp = (status, message) => Object.assign(new Error(message), { status });
 
-// POST /tiket - membuat data tiket utama
-const createTiket = async (req, res, next) => {
-  try {
-    const {
-      kodeKain,
-      motif,
-      harga,
-      benang,
-      ukuran,
-      kontak,
-      pengrajinId,
-      createdAt,
-    } = req.body;
+const getAllSongket = async (req, res, next) => {
+    try {
+        const filter = {};
+        if (req.query.benang !== undefined) {
+            filter.benang = req.query.benang;
+        }
 
-    // Memeriksa format ID pengrajin.
-    if (pengrajinId && !mongoose.Types.ObjectId.isValid(pengrajinId)) {
-      const error = new Error("ID pengrajin tidak valid");
-      error.status = 400;
-      return next(error);
-    }
+        const songket = await Songket.find(filter)
+            .populate('pengrajinId', 'kode nama')
+            .sort({ createdAt: -1 });
 
-    // Memastikan pengrajin yang dipilih tersedia.
-    if (pengrajinId) {
-      const pengrajin = await Pengrajin.findById(pengrajinId);
-
-      if (!pengrajin) {
-        const error = new Error("Data pengrajin tidak ditemukan");
-        error.status = 404;
+        return res.status(200).json({
+            message: 'Berhasil mengambil data songket',
+            data: songket
+        });
+    } catch (error) {
         return next(error);
-      }
     }
-
-    // Hanya menerima field yang ditentukan pada topik.
-    const tiket = await Tiket.create({
-      kodeTiket,
-      namaPembeli,
-      harga,
-      kelas,
-      kontak,
-      pengrajinId,
-      benang
-    });
-
-    return res.status(201).json({
-      message: "Data tiket berhasil ditambahkan",
-      data: tiket
-    });
-  } catch (error) {
-    return next(error);
-  }
 };
 
-// GET /tiket dan GET /tiket?kelas=...
-const getAllTiket = async (req, res, next) => {
-  try {
-    const filter = {};
+const getSongketById = async (req, res, next) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return next(errorHttp(400, 'ID songket tidak valid'));
+        }
 
-    // Filter berdasarkan kelas tiket jika query tersedia.
-    if (req.query.kelas !== undefined) {
-      filter.kelas = req.query.kelas;
+        const songket = await Songket.findById(req.params.id)
+            .populate('pengrajinId', 'kode nama');
+        if (!songket) {
+            return next(errorHttp(404, 'Data songket tidak ditemukan'));
+        }
+
+        return res.status(200).json({
+            message: 'Berhasil mengambil detail songket',
+            data: songket
+        });
+    } catch (error) {
+        return next(error);
     }
-
-    const tiket = await Tiket.find(filter)
-      .select(fieldProjection)
-      .sort({
-        createdAt: -1
-      });
-
-    return res.status(200).json({
-      message: "Berhasil mengambil data tiket",
-      data: tiket
-    });
-  } catch (error) {
-    return next(error);
-  }
 };
 
-// GET /tiket/:id - mengambil detail tiket.
-const getTiketById = async (req, res, next) => {
-  try {
-    const { id } = req.params;
+const createSongket = async (req, res, next) => {
+    try {
+        const { kodeKain, motif, harga, benang, ukuran, pengrajinId } = req.body;
 
-    // Memeriksa apakah ID memiliki format ObjectId yang valid.
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      const error = new Error("ID tiket tidak valid");
-      error.status = 400;
-      return next(error);
+        if (!mongoose.Types.ObjectId.isValid(pengrajinId)) {
+            return next(errorHttp(400, 'ID pengrajin tidak valid'));
+        }
+        const pengrajin = await Pengrajin.findById(pengrajinId);
+        if (!pengrajin) {
+            return next(errorHttp(404, 'Data pengrajin tidak ditemukan'));
+        }
+
+        const songket = await Songket.create({
+            kodeKain,
+            motif,
+            harga,
+            benang,
+            ukuran,
+            pengrajinId
+        });
+
+        return res.status(201).json({
+            message: 'Data songket berhasil ditambahkan',
+            data: songket
+        });
+    } catch (error) {
+        return next(error);
     }
+};
 
-    // Mengambil tiket sekaligus data pengrajin yang direferensikan.
-    const tiket = await Tiket.findById(id).populate(
-      "pengrajinId",
-      "kode nama"
-    );
+const updateSongket = async (req, res, next) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return next(errorHttp(400, 'ID songket tidak valid'));
+        }
 
-    if (!tiket) {
-      const error = new Error("Data tiket tidak ditemukan");
-      error.status = 404;
-      return next(error);
+        const allowedFields = ['kodeKain', 'motif', 'harga', 'benang', 'ukuran', 'pengrajinId'];
+        const update = Object.fromEntries(
+            allowedFields
+                .filter((field) => Object.prototype.hasOwnProperty.call(req.body, field))
+                .map((field) => [field, req.body[field]])
+        );
+
+        if (update.pengrajinId !== undefined) {
+            if (!mongoose.Types.ObjectId.isValid(update.pengrajinId)) {
+                return next(errorHttp(400, 'ID pengrajin tidak valid'));
+            }
+            const pengrajin = await Pengrajin.findById(update.pengrajinId);
+            if (!pengrajin) {
+                return next(errorHttp(404, 'Data pengrajin tidak ditemukan'));
+            }
+        }
+
+        const songket = await Songket.findByIdAndUpdate(req.params.id, update, {
+            new: true,
+            runValidators: true
+        }).populate('pengrajinId', 'kode nama');
+
+        if (!songket) {
+            return next(errorHttp(404, 'Data songket tidak ditemukan'));
+        }
+
+        return res.status(200).json({
+            message: 'Data songket berhasil diperbarui',
+            data: songket
+        });
+    } catch (error) {
+        return next(error);
     }
+};
 
-    return res.status(200).json({
-      message: "Berhasil mengambil detail tiket",
-      data: tiket
-    });
-  } catch (error) {
-    return next(error);
-  }
+const removeSongket = async (req, res, next) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return next(errorHttp(400, 'ID songket tidak valid'));
+        }
+
+        const songket = await Songket.findByIdAndDelete(req.params.id);
+        if (!songket) {
+            return next(errorHttp(404, 'Data songket tidak ditemukan'));
+        }
+
+        return res.status(200).json({
+            message: 'Data songket berhasil dihapus',
+            data: songket
+        });
+    } catch (error) {
+        return next(error);
+    }
 };
 
 module.exports = {
-  createTiket,
-  getAllTiket,
-  getTiketById
+    getAllSongket,
+    getSongketById,
+    createSongket,
+    updateSongket,
+    removeSongket
 };

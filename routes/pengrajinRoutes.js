@@ -4,7 +4,7 @@ const router = express.Router();
 const {
   createPengrajin,
   getAllPengrajin
-} = require("../controllers/pengrajinController");
+} = require("../controllers/pengrajinControlles");
 
 router.post("/", createPengrajin);
 router.get("/", getAllPengrajin);

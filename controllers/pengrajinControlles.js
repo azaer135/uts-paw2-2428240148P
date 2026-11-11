@@ -1,13 +1,10 @@
-const Pengrajin = require("../models/PengrajinModel");
+const Pengrajin = require("../models/pengrajinModels");
 
 const createPengrajin = async (req, res, next) => {
   try {
     const { kode, nama } = req.body;
 
-    const pengrajin = await Pengrajin.create({
-      kode,
-      nama
-    });
+    const pengrajin = await Pengrajin.create({ kode, nama });
 
     return res.status(201).json({
       message: "Data pengrajin berhasil ditambahkan",
@@ -18,12 +15,9 @@ const createPengrajin = async (req, res, next) => {
   }
 };
 
-// GET /pengrajin - mengambil seluruh data pengrajin
 const getAllPengrajin = async (req, res, next) => {
   try {
-    const pengrajin = await Pengrajin.find().sort({
-      kode: 1
-    });
+    const pengrajin = await Pengrajin.find().sort({ kode: 1 });
 
     return res.status(200).json({
       message: "Berhasil mengambil data pengrajin",
